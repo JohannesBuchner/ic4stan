@@ -1,78 +1,41 @@
 import numpy
 import scipy.misc
 
-"""
-WAIC <- function(x)
-{
-lppd <- sum (log(rowMeans(exp(x))))
-pWAIC1 <- 2*sum(log(rowMeans(exp(x))) - rowMeans(x))
-pWAIC2 <- sum(.rowVars(x))
-WAIC <- -2*lppd + 2*pWAIC2
-return(list(WAIC=WAIC, lppd=lppd, pWAIC=pWAIC2, pWAIC1=pWAIC1))
-}
-"""
-
-#WAIC = T + V / nsamples
-#WBIC = -Ew()
-
-"""
-totals <- function(pointwise) {
-	N <- length(pointwise[[1L]])
-	total <- unlist_lapply(pointwise, sum)
-	se <- sqrt(N * unlist_lapply(pointwise, var))
-	as.list(c(total, se))
-}
-"""
-
-def total(v):
-	N = len(v)
-	return v.sum(), N**0.5 * v.std()
-
-"""
-#' @importFrom matrixStats colVars
-pointwise_waic <- function(log_lik) {
-	lpd <- logColMeansExp(log_lik)
-	p_waic <- colVars(log_lik)
-	elpd_waic <- lpd - p_waic
-	waic <- -2 * elpd_waic
-	nlist(elpd_waic, p_waic, waic)
-}
-"""
-
-def logColMeansExp(x):
-	S = len(x)
-	return colLogSumExps(x) - log(S)
-
-def pointwise_waic(log_lik):
-	lpd = scipy.misc.logsumexp(log_lik, axis=1)
-	p_waic = numpy.var(log_lik, axis=1)
+def waic(log_like):
+	lpd = scipy.misc.logsumexp(log_like)
+	p_waic = numpy.var(log_like)
 	elpd_waic = lpd - p_waic
 	waic = -2 * elpd_waic
-	aic = log_lik.max(axis=1)
 	return dict(elpd_waic=elpd_waic, p_waic=p_waic, waic=waic)
 
-"""
-waic <- function(log_lik) {
-	if (!is.matrix(log_lik))
-	   stop('log_lik should be a matrix')
-	pointwise <- pointwise_waic(log_lik)
-	out <- totals(pointwise)
-	nms <- names(pointwise)
-	names(out) <- c(nms, paste0("se_", nms))
-	out$pointwise <- cbind_list(pointwise)
-	attr(out, "log_lik_dim") <- dim(log_lik)
-	class(out) <- "loo"
-	out
-}
-"""
-def waic(l):
-	pointwise = pointwise_waic(l)
-	for k, v in pointwise.iteritems():
-		yield k, total(v)
+def maxlike(log_like):
+	return log_like.max()
+
+def dic(log_like):
+	D = -2 * log_like
+	Dmean = D.mean()
+	#pD_spiegelhalter = Dmean - D(theta_mean)
+	pD_gelman = 0.5 * numpy.var(D)
+	DIC = pD_gelman + Dmean
+	return DIC
+
+def aic(log_like, nparams):
+	k = nparams
+	return 2 * k - 2 * log_like.max()
+
+def aicc(log_like, nparams, ndata):
+	k = nparams
+	n = ndata
+	return aic(log_like, nparams) + 2 * k * (k + 1) / (n - k - 1)
+
+def bic(log_like, nparams, ndata):
+	k = nparams
+	n = ndata
+	return -2 * log_like.max() + k * log(n)
 
 if __name__ == '__main__':
 	import sys
-	all_likes = []
+	results = {}
 	filenames = sys.argv[1:]
 	for filename in filenames:
 		data = numpy.load(filename)
@@ -83,16 +46,16 @@ if __name__ == '__main__':
 			nparams += numpy.product(list(data[k].shape)[1:])
 		print '%d parameters' % nparams
 		nsamples = len(l)
-		all_likes.append(l)
-	all_likes = numpy.array(all_likes)
-	print '%-20s : max at\tmax\tmean (log likelihood)' % 'filename'
-	for i in range(len(all_likes)):
-		l = all_likes[i]
-		print '%-20s : %.1f%%\t%.1f\t%.1f' % (filenames[i], 
-			l.argmax() * 100. / len(l),
-			l.max(), l.mean()
-			)
-	for k, v in waic(all_likes):
-		print '%-20s : %s' % (k, v)
-
+		result = waic(l)
+		result['dic'] = dic(l)
+		result['aic'] = aic(l, nparams)
+		result['maxlike'] = maxlike(l)
+		for k, v in result.iteritems():
+			results[k] = results.get(k, []) + [v]
+			print '%-20s | %-10s | %.1f' % (filename, k, v)
+		print
+	print '%-10s : mean\tstd' % 'criterion'
+	for k, v in results.iteritems():
+		print '%-10s : %.1f\t%.1f' % (k, numpy.mean(v), numpy.std(v))
+	
 
