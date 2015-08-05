@@ -11,16 +11,12 @@ import numpy
 import sys
 from stancsvreader import readcsv
 
+variables = readcsv(sys.argv[1])
 print('loading data ...')
 variables = readcsv(sys.argv[1])
 
-print('storing as Rdump, last value ...')
-import pystan
-last = {}
-for var in sorted(variables.keys()):
-	if '__' in var: continue
-	last[var] = variables[var][-1]
-outfilename = sys.argv[1].rstrip('.csv') + '.Rdata'
-pystan.misc.stan_rdump(last, outfilename)
+print('storing as npz ...')
+outfilename = sys.argv[1].rstrip('.csv') + '.npz'
+numpy.savez(outfilename, **variables)
 
 

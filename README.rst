@@ -11,7 +11,12 @@ Information criteria for Stan
   * WAIC (Watanabe 2010)
   * TODO: WBIC (Watanabe 2013) (help appreciated!)
 
+Also contained: convert the csv output files of Stan to npz or Rdata/Rdump files
+
 * csv2Rdata.py -- start a Stan run where another terminated (e.g. optimize, then sample)
+* csv2npz.py -- convert csv output to npz
+* Rdata2npz.py -- convert Rdata/Rdump to npz
+* stancsvreader.py -- parser for stan csv files, returns variables as numpy arrays
 
 Example
 ----------
