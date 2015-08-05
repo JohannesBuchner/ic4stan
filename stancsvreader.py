@@ -5,7 +5,7 @@ numpy arrays.
 Author: Johannes Buchner (c) 2015
 License: GPLv3
 """
-
+from __future__ import print_function
 import numpy
 import sys
 
@@ -40,7 +40,8 @@ def readcsv(filename):
 			variables_setters.append(dict(var=trunk, pos=pos))
 
 	print('creating variables...')
-	for var, dim in variables_dimensions.iteritems():
+	for var in variables_dimensions.keys():
+		dim = variables_dimensions[var]
 		print('  ', var, dim)
 		variables[var] = numpy.zeros(dim)
 

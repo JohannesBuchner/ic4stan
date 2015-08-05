@@ -7,11 +7,11 @@ Author: Johannes Buchner (c) 2015
 License: GPLv3
 """
 
+from __future__ import print_function
 import numpy
 import sys
 from stancsvreader import readcsv
 
-variables = readcsv(sys.argv[1])
 print('loading data ...')
 variables = readcsv(sys.argv[1])
 
