@@ -49,6 +49,7 @@ def readcsv(filename):
 
 	for l in lines[1:]:
 		if l.strip() == '': continue
+		# fill
 		for i, value_str in enumerate(l.split(',')):
 			value = float(value_str)
 			var = variables_setters[i]['var']
@@ -58,8 +59,11 @@ def readcsv(filename):
 			else:
 				pos0 = tuple([d - 1 for d in pos1]) # 0-indexed for numpy
 				variables[var][pos0] = value
+		
+		# store away
 		for var in sorted(variables.keys()):
 			value = variables[var]
+			# integer variables should be stored as integers
 			if len(numpy.shape(value)) == 0:
 				if int(value) == value:
 					value = int(value)
@@ -67,7 +71,7 @@ def readcsv(filename):
 				if numpy.all(value.astype(int) == value):
 					variables[var] = value.astype(int)
 			#print var, variables[var]
-			variables_all[var] = variables_all.get(var, []) + [variables[var]]
+			variables_all[var] = variables_all.get(var, []) + [numpy.copy(variables[var])]
 	
 	for var in sorted(variables.keys()):
 		variables[var] = numpy.array(variables_all[var])
